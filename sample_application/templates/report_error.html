@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+
+{% block page_content %}
+<div class="page-header">
+    <h2>Report is not  Generated yet.Please generate Report First!! </h2>
+</div>
+     <style>
+button {
+      background-color: #555555;
+      border: none;
+      float: left;
+      color: white;
+      padding: 15px 32px;
+      text-align: center;
+      text-decoration: none;
+      display: inline;
+      font-size: 16px;
+      margin: 4px 2px;
+      cursor: pointer;
+}
+  </style>
+<form method="post" action="{{url_for('index') }}">
+    <button type="submit"> Go Back to Report Page</button>
+</form>
+{% endblock %}

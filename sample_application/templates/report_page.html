@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block page_content %}
+
+     <style>
+button {
+      background-color: #555555;
+      border: none;
+      float: left;
+      color: white;
+      padding: 15px 32px;
+      text-align: center;
+      text-decoration: none;
+      display: inline;
+      font-size: 16px;
+      margin: 4px 2px;
+      cursor: pointer;
+}
+  </style>
+<form method="post" action="{{url_for('message') }}">
+ <h4><button type="Main Page">Go Back To Report Page</button></h4>
+ </form>
+  <table border="2" style="width:100%">
+     <tr>
+          <td>NE</td>
+          <td>Name</td>
+          <td>Parameter</td>		
+          <td>Internal Value</td>
+          <td>Report Value</td>
+      </tr>
+{% for row in table %}
+      <tr>
+       <td>{{ row[0] }}</td>
+       <td>{{ row[1] }}</td>		
+       <td>{{ row[2] }}</td>
+       <td>{{ row[3] }}</td>
+       <td>{{ row[4] }}</td>
+       </tr>
+{% endfor %}
+  </table>
+
+{% endblock %}

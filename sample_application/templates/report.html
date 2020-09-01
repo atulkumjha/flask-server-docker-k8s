@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block page_content %}
+<div class="page-header">
+  <h1>Main Report Page</h1>
+</div>
+     <style>
+button {
+      background-color: #4C8CBA;
+      border: none;
+      float: left;
+      color: white;
+      padding: 15px 32px;
+      text-align: center;
+      text-decoration: none;
+      display: inline;
+      font-size: 16px;
+      margin: 4px 2px;
+      cursor: pointer;
+}
+
+.button2 {background-color: #008CBA;} /* Blue */
+.button3 {background-color: #f44336;} /* Red */
+.button4 {background-color: #e7e7e7; color: black;} /* Gray */
+.button5 {background-color: #555555;} /* Black */
+.button5 {background-color: #4CAF50;} /* Green */
+  </style>
+{% for key, value in sheet.items() %}
+<form method="post" action="{{url_for('report_page', key=key ) }}">
+ <p><button type="submit">{{key}}</button></p>
+ </form>
+{% endfor %}
+{% endblock %}

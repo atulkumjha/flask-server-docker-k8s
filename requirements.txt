@@ -1,0 +1,5 @@
+dominate==2.5.2
+visitor==0.1.3
+flask-appconfig==0.11.1
+flask_wtf==0.14.1
+gunicorn==20.0.4

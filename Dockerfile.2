@@ -1,0 +1,8 @@
+FROM  continuumio/anaconda3
+COPY . /app
+WORKDIR /app
+RUN pip install -r requirements.txt
+ENV FLASK_APP=run_sample_app
+ENV PATH /opt/conda/bin:$PATH
+EXPOSE 5000
+CMD flask serve --host=0.0.0.0

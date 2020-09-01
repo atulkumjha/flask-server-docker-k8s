@@ -1,0 +1,39 @@
+<ul id="xmas-songs">
+{% for row in table.rows %}
+    <li>
+             {% if row['Year featured']|trim %}
+<div class="featured">{{ row['Year featured'] }}</div>
+        {% endif %}
+<div class="name">{{ row['Name'] }}</div>
+        {% if row['youtube'] %}
+<div class="youtube">{{ row['youtube']|safe }}</div>
+        {% endif %}
+<div class="written"><small>Written:</small>
+  
+             <strong>{{ row['Year written'] }}</strong></div>
+<div class="origin"><small>Country of origin:</small>
+  
+             <strong>{{ row['country of origin'] }}</strong></div>
+<div class="composer"><small>Originally by:</small>
+  
+             <strong>{{ row['original composer/lyricist'] }}</strong>
+
+         {{ row['Other composers/lyricists'] }}</div>
+        {% if row['keywords']|trim %}
+<div class="keywords"><small>Memorable lyrics</small>
+  
+             {{ row['keywords'] }}</div>
+        {% endif %}
+        {% if row['famous versions']|trim %}
+<div class="famous"><small>Famous renditions</small>
+  
+             {{ row['famous versions'] }}</div>
+        {% endif %}
+        {% if row['noteable']|trim %}
+<div class="notable"><small>Did you know?</small>
+  
+             {{ row['noteable'] }}</div>
+      {% endif %}</li>
+    {% endfor %}</ul>
+
+

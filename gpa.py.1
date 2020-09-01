@@ -1,0 +1,207 @@
+#TODO
+# Fixed the following Bugs
+#  1. Fix all the try except as these are used for bypassing problem currently
+#  2. Make the columns count generic ...it is hardcoded as 4 columns because except one sheet all are following 4 columns
+from xlrd import open_workbook
+import xlwt 
+from xlutils.copy import copy as copy_workbook
+import xmltodict
+import logging
+from logging.config import fileConfig
+import os, sys
+from datetime import datetime
+
+ 
+#Main Code Flow Here
+# TODO Hardcoding the Sheet no as of Now
+book = open_workbook('data/Nokia_GPL_3.1.ver9.xlsx')
+report = xlwt.Workbook()
+# read header values into the list    in the Logger
+logging.config.fileConfig('logging.ini')
+logger = logging.getLogger()
+#if used copy tool
+#report = copy_workbook(book)
+#rsheet = report.sheet_by_index(6)
+
+def dump(obj, nested_level=0, output=sys.stdout):
+    spacing = '   '
+    if type(obj) == dict:
+        print >> output, '%s{' % ((nested_level) * spacing)
+        for k, v in obj.items():
+            if hasattr(v, '__iter__'):
+                print >> output, '%s%s:' % ((nested_level + 1) * spacing, k)
+                dump(v, nested_level + 1, output)
+            else:
+                print >> output, '%s%s: %s' % ((nested_level + 1) * spacing, k, v)
+        print >> output, '%s}' % (nested_level * spacing)
+    elif type(obj) == list:
+        print >> output, '%s[' % ((nested_level) * spacing)
+        for v in obj:
+            if hasattr(v, '__iter__'):
+                dump(v, nested_level + 1, output)
+            else:
+                print >> output, '%s%s' % ((nested_level + 1) * spacing, v)
+        print >> output, '%s]' % ((nested_level) * spacing)
+    else:
+        print >> output, '%s%s' % (nested_level * spacing, obj)
+  
+matched = {}
+notmatched  = {}
+notavailable = {}
+d_xml = {}
+with open('data/abc.xml') as fd:
+ doc = xmltodict.parse(fd.read())
+#import ipdb; ipdb.set_trace()
+#Keep the data in XML
+# logger.debug( str(doc['raml']['cmData']['managedObject'][0]['p'][0]['#text']))
+#print doc['raml']['cmData']['managedObject'][1]['@distName']
+#print doc['raml']['cmData']['managedObject']['@distName']
+for obj in doc['raml']['cmData']['managedObject']:
+ try:	
+  if obj.has_key('p'):	 
+   for p in obj['p']:
+    d_xml.update({str(obj['@distName']) + ':' + str(p['@name']) : str(p['#text'])})
+    logger.debug( "%s, %s,%s",obj['@distName'], p['@name'], p['#text'])
+  if  obj.has_key('list'):
+   #import ipdb;ipdb.set_trace()
+    for listitem in obj['list']:
+     index = 0
+     for item in listitem['item']:
+      index = index + 1
+      for p in item['p']:
+       keywithspace = str(obj['@distName']) + ':'+str(listitem['@name']) + 'item'+str(index)+str(p['@name'])
+       key = ''.join(keywithspace.split())
+       d_xml.update({key : str(p['#text'])})
+       logger.info("Key List [%s], Value [%s]", key , str(p['#text']))
+       #print "Key List [%s], Value [%s]"% (key , str(p['#text']))
+  # This is the case when it is neither list nor normal p items
+  if not obj.has_key('p') and not obj.has_key('list') :
+   logger.info( "ignoring This implementation as of now without list or P items" ) 	 
+
+ except:
+  logger.debug( "ignoring list implementation as of now" ) 	 
+
+ #dump (d_xml) 
+
+def convertToString(i):
+ """ I faced the problem 1.0 not matching 0.0"""
+ if type(i) is float:
+  return str(int(i))
+ elif type(i) is long:
+  return str(int(i))
+ else:
+  return i
+  #return i.encode("utf-16", "replace")
+
+def match_xls_xml(d_xls , d_xml):
+ """ It will match the 2 dictionaries and print the result"""
+ for key in d_xls:
+  if key in d_xml.keys():
+   if d_xml[key] == d_xls[key]:
+    logger.debug( ' Row with Key Matched  key  :[%s] ,Value_xls = [%s], value_xms[%s] ' , key , d_xls[key],  d_xml[key])  	  
+   else: 
+    logger.debug( 'Row with Key Matched But Value Not Matched  :key[%s] ,Value_xls = [%s], value_xms[%s] ' , key , d_xls[key],  d_xml[key])  	  
+  else: 
+   logger.debug( '\n Row with Key Not Found in XML  :[%s] ,Value_xls = [%s] ' , key , d_xls[key])  	  
+
+
+def generate_report_by_sheet_index(index, report):
+ """  This take care of generating the report per XLS 
+     File ..Take unhidden XLS by index and generate teh report file"""
+ sheet = book.sheet_by_index(index)
+ logger.debug("Sheet Name: %s", sheet.name)
+ rsheet = report.add_sheet(sheet.name)
+ data = {}
+ for i in xrange(0, sheet.nrows):
+  data[i] = [sheet.cell_value(i, col) for col in range(sheet.ncols)]
+  for index, value in enumerate(data[i]):
+   rsheet.write(i, index, value)
+   logger.debug("Row No %d : Row Value %s",i, data[i])
+#Add the last column for first row as report for each Sheet  
+ rsheet.write(0, sheet.ncols, 'Report')
+ d_xls = {}
+#(doc['raml']['cmData']['managedObject'][0]['@distName'])+ '/'+str(doc['raml']['cmData']['managedObject'][0]['p'][0]['@name']) 
+# logger.debug( str(doc['raml']['cmData']['managedObject'][0]['p'][0]['#text']))
+#print doc['raml']['cmData']['managedObject'][1]['@distName']
+#print doc['raml']['cmData']['managedObject']['@distName']
+#Find matching  /not matching values
+ for row_index in xrange(1, sheet.nrows):
+  #d_xls.update({"PLMN-PLMN/"+str(sheet.cell(row_index,0).value)+ '/'+str(sheet.cell(row_index,1).value)+'/'+str(sheet.cell(row_index,2).value):convertToString(sheet.cell(row_index,3).value)})
+  logger.debug("Columns in sheet.name(%s) row_index(%d), columen 0 (%s) ,column 1i(%s) , column 2(%s) column3 (%s)",sheet.name,row_index, sheet.cell(row_index,0).value, sheet.cell(row_index,1).value, sheet.cell(row_index,2).value ,sheet.cell(row_index,3).value )
+  keywithspace = "PLMN-PLMN/"+str(sheet.cell(row_index,0).value)+ '/'+str(sheet.cell(row_index,1).value)+':'+str(sheet.cell(row_index,2).value)
+  key =  ''.join(keywithspace.split())
+  value = convertToString(sheet.cell(row_index,3).value)
+  if key in d_xml.keys(): 
+   if d_xml[key] == value :
+    logger.debug( ' Row with Key Matched  key  :[%s] ,Value_xls = [%s], value_xms[%s] ' , key , value,  d_xml[key])  	  
+    matched[key] = str(value)+ " == "+ str(d_xml[key])
+    try:
+     rsheet.write(row_index, 4 , "Yes")
+    except:
+     logger.debug("\n Duplicate data cell it seems")
+     logger.error("Duplicate Data it seems sheetName(%s)row_index(%d) columen0(%s) ,column 1(%s), column 2(%s)",sheet.name,row_index, sheet.cell(row_index,0).value, sheet.cell(row_index,1).value, sheet.cell(row_index,1).value)
+   else: 
+    logger.debug( 'Row with Key Matched But Value Not Matched  :key[%s] ,Value_xls = [%s], value_xms[%s] ' , key , value,  d_xml[key])  	  
+    notmatched[key] = str(value) +' != ' + str(d_xml[key])
+    try:
+     rsheet.write(row_index, 4 , "No")
+    except:
+     logger.debug("\n Duplicate data cell it seems")
+     logger.debug("Duplicate Data it seems sheetName(%s)row_index(%d) columen0(%s) ,column 1(%s), column 2(%s)",sheet.name,row_index, sheet.cell(row_index,0).value, sheet.cell(row_index,1).value, sheet.cell(row_index,1).value)
+  else: 
+    logger.debug( '\n Row with Key Not Found in XML  :[%s] ,Value_xls = [%s] ' , key , value)  	  
+    notavailable[key] = value 
+    try:
+     rsheet.write(row_index, 4 , "NA")
+    except:
+     logger.debug("\n Duplicate data cell it seems")
+     logger.debug("Duplicate Data it seems sheetName(%s)row_index(%d) columen0(%s) ,column 1(%s), column 2(%s)",sheet.name,row_index, sheet.cell(row_index,0).value, sheet.cell(row_index,1).value, sheet.cell(row_index,1).value)
+
+    
+for index in range(3, book.nsheets) :  
+ sheet = book.sheet_by_index(index)
+ if sheet.visibility == 1 :
+  logger.info("The Sheet: %s is hidden. Hence ignore this sheet", sheet.name)
+  continue
+ generate_report_by_sheet_index(index, report)
+
+
+logger.info(" <<<<<< ----------------->>>>")
+logger.info(" <<<<<<Matched Items Report>>>>")
+logger.info(" <<<<<< ----------------->>>>")
+for keys,values in matched.items():
+ logger.info("Matched keys [%s] : values[%s]", keys, values)
+
+logger.info(" <<<<<< ----------------->>>>")
+logger.info(" <<<<<<UnMatched Items Report>>>>")
+logger.info(" <<<<<< ----------------->>>>")
+for keys,values in notmatched.items():
+ logger.info("NotMatched keys [%s] : values[%s]", keys, values)
+
+logger.info(" <<<<<< ----------------->>>>")
+logger.info(" <<<<<<NotAvailable Items Report>>>>")
+logger.info(" <<<<<< ----------------->>>>")
+for keys,values in notavailable.items():
+ logger.info("NotAvailable keys [%s] : values[%s]", keys, values)
+
+filename = 'Report.xls'
+if os.path.isfile(filename): 
+ # define a timestamp format you like
+ FORMAT = '%Y%m%d%H%M%S'
+ new_file = '%s_%s' % (datetime.now().strftime(FORMAT), filename)
+ os.rename(filename, new_file)
+ logger.info("Old report already exist and it is moved..Existing report File:%s is moved New File:%s", filename, new_file)
+ 
+logger.info("!!!!!!Generating Report :[%s]  !!!!!", filename)
+logger.info("!!!!!!Matched Items[%d]   !!!!!", len(matched.keys()))
+logger.info("!!!!!!Unmatched  Items[%d]   !!!!!", len(notmatched.keys()))
+logger.info("!!!!!!NotAvailable  Items[%d]   !!!!!", len(notavailable.keys()))
+
+report.save(filename)
+ 
+
+
+
+
+ 	
+
